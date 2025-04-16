@@ -7,22 +7,19 @@ import (
 )
 
 func RunPipeline(cmds ...cmd) {
-	if len(cmds) == 0 {
-		return
-	}
-
+	var wg sync.WaitGroup
 	var nextIn chan interface{} = nil
 	for _, c := range cmds {
 		outChan := make(chan interface{})
+		wg.Add(1)
 		go func(cmdFunc cmd, in, out chan interface{}) {
+			defer wg.Done()
 			cmdFunc(in, out)
 			close(out)
 		}(c, nextIn, outChan)
 		nextIn = outChan
 	}
-
-	for range nextIn {
-	}
+	wg.Wait()
 }
 
 func SelectUsers(in, out chan interface{}) {
