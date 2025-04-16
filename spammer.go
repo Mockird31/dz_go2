@@ -28,7 +28,11 @@ func SelectUsers(in, out chan interface{}) {
 	var mu sync.Mutex
 
 	for emailRaw := range in {
-		email := emailRaw.(string)
+		email, ok := emailRaw.(string)
+		if !ok {
+			fmt.Println("Invalid email format")
+			return
+		}
 		wg.Add(1)
 		go func(e string) {
 			defer wg.Done()
@@ -52,7 +56,11 @@ func SelectMessages(in, out chan interface{}) {
 		defer close(batchChan)
 		var batch []User
 		for uRaw := range in {
-			user := uRaw.(User)
+			user, ok := uRaw.(User)
+			if !ok {
+				fmt.Println("Invalid user format")
+				return
+			}
 			batch = append(batch, user)
 			if len(batch) >= GetMessagesMaxUsersBatch {
 				batchChan <- batch
@@ -89,7 +97,11 @@ func CheckSpam(in, out chan interface{}) {
 	sem := make(chan struct{}, HasSpamMaxAsyncRequests)
 
 	for msgIDRaw := range in {
-		msgID := msgIDRaw.(MsgID)
+		msgID, ok := msgIDRaw.(MsgID)
+		if !ok {
+			fmt.Println("Invalid message ID format")
+			return
+		}
 		wg.Add(1)
 		go func(m MsgID) {
 			defer wg.Done()
@@ -113,7 +125,12 @@ func CheckSpam(in, out chan interface{}) {
 func CombineResults(in, out chan interface{}) {
 	var results []MsgData
 	for dataRaw := range in {
-		results = append(results, dataRaw.(MsgData))
+		dataMsg, ok := dataRaw.(MsgData)
+		if !ok {
+			fmt.Println("Invalid message data format")
+			return
+		}
+		results = append(results, dataMsg)
 	}
 
 	sort.Slice(results, func(i, j int) bool {
